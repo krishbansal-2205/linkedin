@@ -1,11 +1,10 @@
 import type { Metadata } from 'next';
-import { Inter } from 'next/font/google';
+import { GeistSans } from 'geist/font/sans';
 import './globals.css';
 import AuthProvider from '@/context/AuthProvider';
 import { Toaster } from '@/components/ui/sonner';
 import Navbar from '@/components/Navbar';
-
-const inter = Inter({ subsets: ['latin'] });
+import { ThemeProvider } from '@/components/ThemeProvider';
 
 export const metadata: Metadata = {
    title: 'LinkedIn',
@@ -19,13 +18,22 @@ export default async function RootLayout({
 }>) {
    return (
       <html lang='en' suppressHydrationWarning>
-         <AuthProvider>
-            <body className={inter.className}>
-               <Navbar />
-               <main className='container mx-auto px-6 py-8'>{children}</main>
-               <Toaster />
-            </body>
-         </AuthProvider>
+         <body className={GeistSans.className}>
+            <ThemeProvider
+               attribute='class'
+               defaultTheme='system'
+               enableSystem
+               disableTransitionOnChange
+            >
+               <AuthProvider>
+                  <div className='relative flex min-h-screen w-full flex-col bg-background'>
+                     <Navbar />
+                     <main className='flex-1'>{children}</main>
+                  </div>
+                  <Toaster />
+               </AuthProvider>
+            </ThemeProvider>
+         </body>
       </html>
    );
 }

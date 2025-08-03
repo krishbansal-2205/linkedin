@@ -1,85 +1,86 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { formatTimestamp } from '@/lib/time';
-import Link from 'next/link';
 import { Post } from '@/types/Post';
 import { useSession } from 'next-auth/react';
 import axios, { AxiosError } from 'axios';
 import { toast } from 'sonner';
 import { ApiResponse } from '@/types/ApiResponse';
+import { CreatePostForm } from '@/components/CreatePostForm';
+import { PostCard } from '@/components/PostCard';
+import { Skeleton } from '@/components/ui/skeleton';
 
 export default function Home() {
    const [posts, setPosts] = useState<Post[]>([]);
-   const [content, setContent] = useState<string>('');
-   const { data: session } = useSession();
-   const user = session?.user;
+   const [isLoading, setIsLoading] = useState(true);
 
-   const fetchPosts = useCallback(
-      () => async () => {
-         try {
-            const res = await axios.get<ApiResponse>('/api/posts');
-            setPosts(res.data.data?.reverse() || []);
-         } catch (error) {
-            const err = error as AxiosError<ApiResponse>;
-            toast.error(err.response?.data.message);
-         }
-      },
-      []
-   );
-
-   const handleSubmit = async (e: React.FormEvent) => {
-      e.preventDefault();
-
+   const fetchPosts = useCallback(async () => {
+      setIsLoading(true);
       try {
-         const res = await axios.post<ApiResponse>('/api/posts', { content });
-         setContent('');
-         fetchPosts();
+         const res = await axios.get<ApiResponse>('/api/posts');
+         setPosts(res.data.data?.reverse() || []);
       } catch (error) {
          const err = error as AxiosError<ApiResponse>;
-         toast.error(err.response?.data.message);
+         toast.error(err.response?.data.message || 'Failed to fetch posts');
+      } finally {
+         setIsLoading(false);
       }
-   };
+   }, []);
 
    useEffect(() => {
       fetchPosts();
-   }, []);
+   }, [fetchPosts]);
 
    return (
-      <div className='max-w-2xl mx-auto'>
-         <h1 className='text-3xl font-bold my-8'>Public Post Feed</h1>
-         {user && (
-            <form onSubmit={handleSubmit} className='mb-8'>
-               <textarea
-                  className='w-full p-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500'
-                  value={content}
-                  onChange={(e) => setContent(e.target.value)}
-                  placeholder="What's on your mind?"
-               />
-               <button
-                  className='w-full px-4 py-2 mt-2 font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500'
-                  type='submit'
-               >
-                  Post
-               </button>
-            </form>
-         )}
-         <div>
-            {posts.map((post) => (
-               <div
-                  key={post._id.toString()}
-                  className='p-4 my-4 bg-white rounded-lg shadow-md'
-               >
-                  <p className='text-gray-800'>{post.content}</p>
-                  <Link href={`/profile/${post.author._id}`}>
-                     <p className='text-gray-600 text-sm mt-2'>
-                        Posted by: {post.author.name} on{' '}
-                        {formatTimestamp(post.timestamp)}
-                     </p>
-                  </Link>
-               </div>
-            ))}
+      <main className='container max-w-3xl mx-auto py-8'>
+         <CreatePostForm onPostCreated={fetchPosts} />
+
+         <div className='space-y-4'>
+            {isLoading ? (
+               <PostFeedSkeleton />
+            ) : posts.length > 0 ? (
+               posts.map((post) => (
+                  <PostCard key={post._id.toString()} post={post} />
+               ))
+            ) : (
+               <EmptyFeed />
+            )}
          </div>
+      </main>
+   );
+}
+
+function PostFeedSkeleton() {
+   return (
+      <div className='space-y-4'>
+         {[...Array(3)].map((_, i) => (
+            <div key={i} className='bg-card rounded-lg border shadow-sm p-6'>
+               <div className='flex items-start space-x-4'>
+                  <Skeleton className='h-12 w-12 rounded-full' />
+                  <div className='flex-1 space-y-2'>
+                     <Skeleton className='h-4 w-1/4' />
+                     <Skeleton className='h-4 w-1/6' />
+                  </div>
+               </div>
+               <div className='mt-4 space-y-2'>
+                  <Skeleton className='h-4 w-full' />
+                  <Skeleton className='h-4 w-5/6' />
+               </div>
+            </div>
+         ))}
+      </div>
+   );
+}
+
+function EmptyFeed() {
+   return (
+      <div className='text-center py-16 bg-card rounded-lg border shadow-sm'>
+         <h2 className='text-2xl font-semibold text-card-foreground'>
+            No posts yet
+         </h2>
+         <p className='mt-2 text-muted-foreground'>
+            Be the first to share your thoughts!
+         </p>
       </div>
    );
 }
