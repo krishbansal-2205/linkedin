@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { formatTimestamp } from '@/lib/time';
 import Link from 'next/link';
 import { Post } from '@/types/Post';
@@ -15,15 +15,18 @@ export default function Home() {
    const { data: session } = useSession();
    const user = session?.user;
 
-   const fetchPosts = async () => {
-      try {
-         const res = await axios.get<ApiResponse>('/api/posts');
-         setPosts(res.data.data?.reverse() || []);
-      } catch (error) {
-         const err = error as AxiosError<ApiResponse>;
-         toast.error(err.response?.data.message);
-      }
-   };
+   const fetchPosts = useCallback(
+      () => async () => {
+         try {
+            const res = await axios.get<ApiResponse>('/api/posts');
+            setPosts(res.data.data?.reverse() || []);
+         } catch (error) {
+            const err = error as AxiosError<ApiResponse>;
+            toast.error(err.response?.data.message);
+         }
+      },
+      []
+   );
 
    const handleSubmit = async (e: React.FormEvent) => {
       e.preventDefault();
