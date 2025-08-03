@@ -11,7 +11,7 @@ export async function sendVerificationEmail(
          from: 'Linkedin <onboarding@resend.dev>',
          to: email,
          subject: 'Linkedin Verification Code',
-         react: VerificationEmail({ username, otp: verifyCode }),
+         react: VerificationEmail({ username, email, otp: verifyCode }),
       });
       return {
          success: true,

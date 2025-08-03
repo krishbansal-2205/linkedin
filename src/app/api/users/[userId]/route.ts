@@ -1,6 +1,6 @@
-import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/dbConnect';
-import Post from '@/models/Post';
+import User from '@/models/User';
+import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET(
    req: NextRequest,
@@ -9,12 +9,16 @@ export async function GET(
    await dbConnect();
    try {
       const { userId } = await params;
-      const posts = await Post.find({ author: userId }).populate(
-         'author',
-         'name'
-      );
+      const user = await User.findById(userId).select('-password');
+      if (!user) {
+         return NextResponse.json(
+            { success: false, message: 'User not found' },
+            { status: 404 }
+         );
+      }
+
       return NextResponse.json(
-         { success: true, message: 'Posts fetched successfully', data: posts },
+         { success: true, message: 'User fetched successfully', user: user },
          { status: 200 }
       );
    } catch (error: any) {

@@ -2,33 +2,30 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import axios, { AxiosError } from 'axios';
+import { toast } from 'sonner';
+import { ApiResponse } from '@/types/ApiResponse';
 
 export default function Register() {
    const [form, setForm] = useState({
-      name: '',
+      username: '',
       email: '',
       password: '',
       bio: '',
    });
-   //  const [name, setName] = useState<string>('');
-   //  const [email, setEmail] = useState<string>('');
-   //  const [password, setPassword] = useState<string>('');
-   //  const [bio, setBio] = useState<string>('');
    const router = useRouter();
 
    const handleSubmit = async (e: React.FormEvent) => {
       e.preventDefault();
-      const res = await fetch('/api/auth/register', {
-         method: 'POST',
-         headers: {
-            'Content-Type': 'application/json',
-         },
-         body: JSON.stringify({ ...form }),
-      });
-      if (res.ok) {
-         router.push('/login');
-      } else {
-         // Handle error
+      try {
+         const res = await axios.post<ApiResponse>('/api/auth/signup', form);
+         toast('Success', { description: res.data.message });
+         router.replace(`/verify/${form.email}`);
+      } catch (error) {
+         const err = error as AxiosError<ApiResponse>;
+         toast.error('Error occurred while registering', {
+            description: err.response?.data.message,
+         });
       }
    };
 
@@ -48,9 +45,9 @@ export default function Register() {
                      className='w-full px-3 py-2 mt-1 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500'
                      id='name'
                      type='text'
-                     value={form.name}
+                     value={form.username}
                      onChange={(e) =>
-                        setForm({ ...form, name: e.target.value })
+                        setForm({ ...form, username: e.target.value })
                      }
                   />
                </div>

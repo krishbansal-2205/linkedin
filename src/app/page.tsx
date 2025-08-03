@@ -1,54 +1,46 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { formatTimestamp } from '@/lib/time';
 import Link from 'next/link';
-import { User } from '@/models/User';
 import { Post } from '@/types/Post';
+import { useSession } from 'next-auth/react';
+import axios, { AxiosError } from 'axios';
+import { toast } from 'sonner';
+import { ApiResponse } from '@/types/ApiResponse';
 
 export default function Home() {
-   const [posts, setPosts] = useState<Post[] | []>([]);
-   const [content, setContent] = useState('');
-   const [user, setUser] = useState<User>();
-
-   useEffect(() => {
-      const storedUser = localStorage.getItem('user');
-      if (storedUser) {
-         setUser(JSON.parse(storedUser));
-      }
-      fetchPosts();
-   }, []);
+   const [posts, setPosts] = useState<Post[]>([]);
+   const [content, setContent] = useState<string>('');
+   const { data: session } = useSession();
+   const user = session?.user;
 
    const fetchPosts = async () => {
-      const res = await fetch('/api/posts');
-      const data = await res.json();
-      setPosts(data.data.reverse());
+      try {
+         const res = await axios.get<ApiResponse>('/api/posts');
+         setPosts(res.data.data?.reverse() || []);
+      } catch (error) {
+         const err = error as AxiosError<ApiResponse>;
+         toast.error(err.response?.data.message);
+      }
    };
 
    const handleSubmit = async (e: React.FormEvent) => {
       e.preventDefault();
-      if (!user) {
-         alert('You must be logged in to post.');
-         return;
-      }
-      if (!content.trim()) {
-         alert('Post content cannot be empty.');
-         return;
-      }
-      const res = await fetch('/api/posts', {
-         method: 'POST',
-         headers: {
-            'Content-Type': 'application/json',
-         },
-         body: JSON.stringify({ content, author: user._id }),
-      });
-      if (res.ok) {
+
+      try {
+         const res = await axios.post<ApiResponse>('/api/posts', { content });
          setContent('');
          fetchPosts();
-      } else {
-         // Handle error
+      } catch (error) {
+         const err = error as AxiosError<ApiResponse>;
+         toast.error(err.response?.data.message);
       }
    };
+
+   useEffect(() => {
+      fetchPosts();
+   }, []);
 
    return (
       <div className='max-w-2xl mx-auto'>
@@ -78,7 +70,7 @@ export default function Home() {
                   <p className='text-gray-800'>{post.content}</p>
                   <Link href={`/profile/${post.author._id}`}>
                      <p className='text-gray-600 text-sm mt-2'>
-                        Posted by: {post.author._id.name} on{' '}
+                        Posted by: {post.author.name} on{' '}
                         {formatTimestamp(post.timestamp)}
                      </p>
                   </Link>

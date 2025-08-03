@@ -2,27 +2,38 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { signIn } from 'next-auth/react';
+import { toast } from 'sonner';
 
 export default function Login() {
-   const [email, setEmail] = useState('');
-   const [password, setPassword] = useState('');
+   const [form, setForm] = useState({
+      email: '',
+      password: '',
+   });
    const router = useRouter();
 
    const handleSubmit = async (e: React.FormEvent) => {
       e.preventDefault();
-      const res = await fetch('/api/auth/login', {
-         method: 'POST',
-         headers: {
-            'Content-Type': 'application/json',
-         },
-         body: JSON.stringify({ email, password }),
+      const res = await signIn('credentials', {
+         redirect: false,
+         email: form.email,
+         password: form.password,
       });
-      if (res.ok) {
-         const data = await res.json();
-         localStorage.setItem('user', JSON.stringify(data.data));
-         router.push('/');
-      } else {
-         // Handle error
+
+      if (res?.error) {
+         if (res.error === 'CredentialsSignin') {
+            toast('Login Failed', {
+               description: 'Incorrect username or password',
+            });
+         } else {
+            toast.error('Error', {
+               description: res.error,
+            });
+         }
+      }
+
+      if (res?.url) {
+         router.replace('/');
       }
    };
 
@@ -42,8 +53,10 @@ export default function Login() {
                      className='w-full px-3 py-2 mt-1 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500'
                      id='email'
                      type='email'
-                     value={email}
-                     onChange={(e) => setEmail(e.target.value)}
+                     value={form.email}
+                     onChange={(e) =>
+                        setForm({ ...form, email: e.target.value })
+                     }
                   />
                </div>
                <div>
@@ -57,8 +70,10 @@ export default function Login() {
                      className='w-full px-3 py-2 mt-1 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500'
                      id='password'
                      type='password'
-                     value={password}
-                     onChange={(e) => setPassword(e.target.value)}
+                     value={form.password}
+                     onChange={(e) =>
+                        setForm({ ...form, password: e.target.value })
+                     }
                   />
                </div>
                <div>

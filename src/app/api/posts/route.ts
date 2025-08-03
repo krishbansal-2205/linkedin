@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/dbConnect';
 import Post from '@/models/Post';
+import { auth } from '@/auth';
 
 export async function GET() {
    await dbConnect();
@@ -18,12 +19,32 @@ export async function GET() {
 export async function POST(req: NextRequest) {
    await dbConnect();
    try {
-      const { content, author } = await req.json();
+      const session = await auth();
+      const user = session?.user;
+      if (!session || !user) {
+         return NextResponse.json(
+            { success: false, message: 'You must be logged in to post' },
+            { status: 401 }
+         );
+      }
+
+      const author = user._id;
+      const { content } = await req.json();
+      if (!content || !content.trim()) {
+         return NextResponse.json(
+            { success: false, message: 'Content cannot be empty' },
+            { status: 400 }
+         );
+      }
+
       const post = await Post.create({ content, author });
-      return NextResponse.json({ success: true, data: post }, { status: 201 });
+      return NextResponse.json(
+         { success: true, message: 'Post created successfully', data: post },
+         { status: 201 }
+      );
    } catch (error: any) {
       return NextResponse.json(
-         { success: false, error: error.message },
+         { success: false, message: error.message },
          { status: 400 }
       );
    }

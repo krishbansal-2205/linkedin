@@ -3,12 +3,15 @@
 import { useState, useEffect } from 'react';
 import { formatTimestamp } from '@/lib/time';
 import { useParams } from 'next/navigation';
-import { User } from '@/models/User';
 import { Post } from '@/types/Post';
+import axios, { AxiosError } from 'axios';
+import { ApiResponse } from '@/types/ApiResponse';
+import { User } from '@/types/User';
+import { toast } from 'sonner';
 
 export default function Profile() {
    const [user, setUser] = useState<User>();
-   const [posts, setPosts] = useState<Post[] | []>([]);
+   const [posts, setPosts] = useState<Post[]>([]);
    const params = useParams();
 
    useEffect(() => {
@@ -19,15 +22,33 @@ export default function Profile() {
    }, [params.userId]);
 
    const fetchUser = async () => {
-      const res = await fetch(`/api/auth/user/${params.userId}`);
-      const data = await res.json();
-      setUser(data.data);
+      try {
+         const res = await axios.get<ApiResponse>(
+            `/api/users/${params.userId}`
+         );
+         setUser(res.data.user);
+      } catch (error) {
+         const err = error as AxiosError<ApiResponse>;
+         toast.error('Error fetching user', {
+            description: err.response?.data.message,
+         });
+         setUser(undefined);
+      }
    };
 
    const fetchPosts = async () => {
-      const res = await fetch(`/api/posts/${params.userId}`);
-      const data = await res.json();
-      setPosts(data.data.reverse());
+      try {
+         const res = await axios.get<ApiResponse>(
+            `/api/posts/${params.userId}`
+         );
+         setPosts(res.data.data || []);
+      } catch (error) {
+         const err = error as AxiosError<ApiResponse>;
+         toast.error('Error fetching posts', {
+            description: err.response?.data.message,
+         });
+         setPosts([]);
+      }
    };
 
    if (!user) {

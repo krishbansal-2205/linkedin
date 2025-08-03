@@ -13,11 +13,13 @@ import * as React from 'react';
 
 interface VerificationEmailProps {
    username: string;
+   email: string;
    otp: string;
 }
 
 export default function VerificationEmail({
    username,
+   email,
    otp,
 }: VerificationEmailProps) {
    return (
@@ -56,7 +58,7 @@ export default function VerificationEmail({
             </Row>
             <Row>
                <Button
-                  href={`http://localhost:3000/verify/${username}`}
+                  href={`http://localhost:3000/verify/${email}`}
                   style={{ color: '#61dafb' }}
                >
                   Verify here
