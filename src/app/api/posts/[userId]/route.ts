@@ -4,11 +4,11 @@ import Post from '@/models/Post';
 
 export async function GET(
    req: NextRequest,
-   { params }: { params: { userId: string } }
+   context: { params: { userId: string } }
 ) {
    await dbConnect();
    try {
-      const { userId } = await params;
+      const { userId } = await context.params;
       const posts = await Post.find({ author: userId }).populate(
          'author',
          'name'

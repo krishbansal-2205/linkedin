@@ -4,11 +4,11 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET(
    req: NextRequest,
-   { params }: { params: { userId: string } }
+   context: { params: { userId: string } }
 ) {
    await dbConnect();
    try {
-      const { userId } = await params;
+      const { userId } = await context.params;
       const user = await User.findById(userId).select('-password');
       if (!user) {
          return NextResponse.json(
